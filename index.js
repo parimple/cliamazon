@@ -5,11 +5,11 @@ const Regex = require("regex");
 
 //configuring the AWS environment
 
-AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
-AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+
 bucketaws = 'lcloud-427-ag';
 
-
+AWS_ACCESS_KEY_ID='AKIAS464CIUFY3NKMV5H';
+AWS_SECRET_ACCESS_KEY='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';
 
 AWS.config.update({
     accessKeyId: AWS_ACCESS_KEY_ID,
@@ -43,7 +43,6 @@ console.log('args: ', myArgs);
                     if (err) {
                         console.log("Error", err);
                     }
-
                     //success
                     if (data) {
                         console.log("Uploaded in:", data.Location);
@@ -110,7 +109,40 @@ console.log('args: ', myArgs);
             break;
 
         case "rmregex":
-            commandLibrary.tail(userInputArray.slice(1));
+
+            async function listRmregexObjectsFromS3Bucket(bucket, regext) {
+                const regex = new Regex(regext);
+                let isTruncated = true;
+                let marker;
+                while(isTruncated) {
+                    let params = { Bucket: bucket };
+                    if (marker) params.Marker = marker;
+                    try {
+                        const response = await s3.listObjects(params).promise();
+                        response.Contents.forEach(item => {
+
+                            if (regex.test(item.Key)) {
+                                console.log('deleted file: ', item.Key);
+                                var params = {  Bucket: bucketaws, Key: item.Key };
+                                s3.deleteObject(params, function(err, data) {
+                                    if (err) console.log(err, err.stack);  // error
+                                    else     console.log();                 // deleted
+                                });
+
+                            }
+
+                        });
+                        isTruncated = response.IsTruncated;
+                        if (isTruncated) {
+                            marker = response.Contents.slice(-1)[0].Key;
+                        }
+                    } catch(error) {
+                        throw error;
+                    }
+                }
+            }
+            listRmregexObjectsFromS3Bucket(bucketaws, myArgs[1]);
+            break;
 
         default:
             process.stdout.write('Typed command is not accurate');
