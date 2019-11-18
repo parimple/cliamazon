@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk');
 const fs = require('fs');
 const path = require('path');
+const Regex = require("regex");
 
 //configuring the AWS environment
 
@@ -53,7 +54,7 @@ console.log('args: ', myArgs);
             break;
 
         case "ls":
-            async function listAllObjectsFromS3Bucket(bucket, prefix) {
+            async function listAllObjectsFromS3Bucket(bucket) {
                 let isTruncated = true;
                 let marker;
                 while(isTruncated) {
@@ -78,11 +79,37 @@ console.log('args: ', myArgs);
 
             break;
 
-        case "head":
-            commandLibrary.head(userInputArray.slice(1));
+        case "lsregex":
+            async function listRegexObjectsFromS3Bucket(bucket, regext) {
+                const regex = new Regex(regext);
+                let isTruncated = true;
+                let marker;
+                while(isTruncated) {
+                    let params = { Bucket: bucket };
+                    if (marker) params.Marker = marker;
+                    try {
+                        const response = await s3.listObjects(params).promise();
+                        response.Contents.forEach(item => {
+
+                            if (regex.test(item.Key)) {
+                                console.log(item.Key);
+                            }
+
+                        });
+                        isTruncated = response.IsTruncated;
+                        if (isTruncated) {
+                            marker = response.Contents.slice(-1)[0].Key;
+                        }
+                    } catch(error) {
+                        throw error;
+                    }
+                }
+            }
+            listRegexObjectsFromS3Bucket(bucketaws, myArgs[1]);
+
             break;
 
-        case "tail":
+        case "rmregex":
             commandLibrary.tail(userInputArray.slice(1));
 
         default:
@@ -90,18 +117,3 @@ console.log('args: ', myArgs);
     }
 
 
-const listDirectories = params => {
-    return new Promise ((resolve, reject) => {
-        const s3params = {
-            Bucket: 'bucket-name',
-            MaxKeys: 20,
-            Delimiter: '/',
-        };
-        s3.listObjectsV2 (s3params, (err, data) => {
-            if (err) {
-                reject (err);
-            }
-            resolve (data);
-        });
-    });
-};
