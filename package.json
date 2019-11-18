@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "ls" : "node index.js ls",
+    "push": "node index.js push",
+    "lsregex": "node index.js lsregex",
+    "rmregex": "node index.js rmregex"
   },
   "repository": {
     "type": "git",
